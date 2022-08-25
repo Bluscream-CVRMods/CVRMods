@@ -38,7 +38,7 @@ start """" {2}
         KeepRunningSetting = cat.CreateEntry<bool>("KeepRunning", false, "Keep CVR Running", "Always restart CVR when it's being shut down");
         ButtonAPI.OnInit += () => {
             ChilloutButtonAPI.UI.SubMenu menu = ButtonAPI.MainPage.AddSubMenu("Restart Game");
-            _ = menu.AddButton("Restart", "Restart ChilloutVR", () => {
+            menu.AddButton("Restart", "Restart ChilloutVR", () => {
                 RestartGame();
             });
         };
@@ -48,17 +48,11 @@ start """" {2}
         LoggerInstance.Warning("Restarting!");
         MelonPreferences.Save();
         string filename = Process.GetCurrentProcess().ProcessName + ".exe";
-        // var filepath = $"{Environment.CurrentDirectory}/{filename}";
         string args = string.Join(" ", Environment.GetCommandLineArgs());
-        // MelonLogger.Warning(PlayerSetup.Instance._inVr ? "IN VR" : "NOT IN VR");
-        // MelonLogger.Warning(PlayerSetup.Instance.vrHeadTracker.activeSelf ? "VR HEADSET ACTIVE" : "VR HEADSET INACTIVE");
         MelonLogger.Warning("Game start args: " + args);
-        if ((bool)vr_failsave.BoxedValue && PlayerSetup.Instance._inVr) {
-            args += " -vr";
-        }
-
+        if ((bool)vr_failsave.BoxedValue && PlayerSetup.Instance._inVr) args += " -vr";
         File.WriteAllText("restart.bat", string.Format(bat_template, filename, 3, args.Replace("%", "%%")));
-        _ = Process.Start(new ProcessStartInfo() { FileName = File.Exists("reconnect.bat") ? "reconnect.bat" : "restart.bat", CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+        Process.Start(new ProcessStartInfo() { FileName = (File.Exists("reconnect.bat") ? "reconnect.bat" : "restart.bat"), CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
         RootLogic.Instance.QuitApplication();
         Environment.Exit(0);
     }
@@ -67,10 +61,8 @@ start """" {2}
         if (!Input.GetKeyDown((KeyCode)keybind.BoxedValue)) {
             return;
         }
-
         try {
             RestartGame();
-            /*Process.Start("cmd.exe", "/C taskkill /im ChilloutVR.exe");*/
         } catch (Exception e) {
             LoggerInstance.Error($"Failed to restart: {e}");
         }
