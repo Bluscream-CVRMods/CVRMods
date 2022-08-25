@@ -1,18 +1,18 @@
 ﻿using ABI_RC.Core;
 using ABI_RC.Core.Player;
-using Bluscream;
 using MelonLoader;
+using RestartButton;
 using System;
 using System.Diagnostics;
 using System.IO;
 using UnityEngine;
 using ButtonAPI = ChilloutButtonAPI.ChilloutButtonAPIMain;
-using Main = Bluscream.Main;
+using Main = RestartButton.Main;
 
 [assembly: MelonInfo(typeof(Main), Guh.Name, Guh.Version, Guh.Author, Guh.DownloadLink)]
 [assembly: MelonGame("Alpha Blend Interactive", "ChilloutVR")]
 
-namespace Bluscream;
+namespace RestartButton;
 
 public static class Guh {
     public const string Name = "RestartButton";
@@ -29,11 +29,13 @@ start """" {2}
 ";
     public MelonPreferences_Entry keybind;
     public MelonPreferences_Entry vr_failsave;
+    public MelonPreferences_Entry KeepRunningSetting;
 
     public override void OnApplicationStart() {
         MelonPreferences_Category cat = MelonPreferences.CreateCategory(Guh.Name);
         keybind = cat.CreateEntry<KeyCode>("restart_bind", KeyCode.End, "Restart Key Bind", "Key to press to restart game");
         vr_failsave = cat.CreateEntry<bool>("vr_failsave", false, "VR Failsave", "Failsave option to detect VR even if the command line arguments don't provide it");
+        KeepRunningSetting = cat.CreateEntry<bool>("KeepRunning", false, "Keep CVR Running", "Always restart CVR when it's being shut down");
         ButtonAPI.OnInit += () => {
             ChilloutButtonAPI.UI.SubMenu menu = ButtonAPI.MainPage.AddSubMenu("Restart Game");
             _ = menu.AddButton("Restart", "Restart ChilloutVR", () => {
@@ -56,7 +58,7 @@ start """" {2}
         }
 
         File.WriteAllText("restart.bat", string.Format(bat_template, filename, 3, args.Replace("%", "%%")));
-        _ = Process.Start(new ProcessStartInfo() { FileName = "restart.bat", CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+        _ = Process.Start(new ProcessStartInfo() { FileName = File.Exists("reconnect.bat") ? "reconnect.bat" : "restart.bat", CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
         RootLogic.Instance.QuitApplication();
         Environment.Exit(0);
     }
@@ -71,6 +73,12 @@ start """" {2}
             /*Process.Start("cmd.exe", "/C taskkill /im ChilloutVR.exe");*/
         } catch (Exception e) {
             LoggerInstance.Error($"Failed to restart: {e}");
+        }
+    }
+
+    public override void OnApplicationQuit() {
+        if ((bool)KeepRunningSetting.BoxedValue) {
+            RestartGame();
         }
     }
 }
